@@ -128,6 +128,11 @@ class Marketplace(sp.Contract):
     def swap(self, params):
         """Swaps several editions of a token for a fixed price.
 
+        Note that for this operation to work, the marketplace contract should
+        be added before as an operator of the token by the swap issuer. 
+        It's recommended to remove the marketplace operator rights after
+        calling this entry point.
+
         Parameters
         ----------
         params: sp.TRecord
