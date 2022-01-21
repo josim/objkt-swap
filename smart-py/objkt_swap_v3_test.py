@@ -130,6 +130,15 @@ def test_swap_and_collect():
         royalties=royalties,
         creator=artist1.address).run(valid=False, sender=artist1, amount=sp.tez(3))
 
+    # Check that the royalties cannot be set to a value higher than 25%
+    scenario += marketplaceV3.swap(
+        fa2=objkt.address,
+        objkt_id=objkt_id,
+        objkt_amount=swapped_editions,
+        xtz_per_objkt=sp.mutez(edition_price),
+        royalties=251,
+        creator=artist1.address).run(valid=False, sender=artist1)
+
     # Swap the OBJKT in the marketplace v3 contract
     scenario += marketplaceV3.swap(
         fa2=objkt.address,
