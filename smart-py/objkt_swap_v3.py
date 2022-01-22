@@ -7,10 +7,10 @@ and adds the possibility to trade different kinds of FA2 tokens.
 Error message codes:
 
 - HENC_NOT_MANAGER: The operation can only be executed by the contract manager.
-- HENC_TEZ_TRANSFER: The operation does not require tez transfers.
+- HENC_TEZ_TRANSFER: The operation does not accept tez transfers.
 - HENC_SWAPS_PAUSED: Swaps are currently paused in the marketplace.
 - HENC_COLLECTS_PAUSED: Collects are currently paused in the marketplace.
-- HENC_FA2_NOT_ALLOWED: This FA2 token cannot cannot be traded in the marketplace.
+- HENC_FA2_NOT_ALLOWED: This FA2 token cannot be traded in the marketplace.
 - HENC_NO_SWAPPED_EDITIONS: At least one edition needs to be swapped.
 - HENC_WRONG_ROYALTIES: The royalties cannot be higher than 25%.
 - HENC_WRONG_SWAP_ID: The swap_id doesn't exist.
