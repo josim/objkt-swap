@@ -11,6 +11,32 @@ marketplaceContractV1 = sp.io.import_script_from_url(f"file://{os.getcwd()}/objk
 marketplaceContractV3 = sp.io.import_script_from_url(f"file://{os.getcwd()}/objkt_swap_v3.py")
 
 
+class RecipientContract(sp.Contract):
+    """This contract simulates a user that can recive tez transfers.
+
+    It should only be used to test that tez transfers are sent correctly.
+
+    """
+
+    def __init__(self):
+        """Initializes the contract.
+
+        """
+        self.init()
+
+    @sp.entry_point
+    def default(self, unit):
+        """Default entrypoint that allows receiving tez transfers in the same
+        way as one would do with a normal tz wallet.
+
+        """
+        # Define the input parameter data type
+        sp.set_type(unit, sp.TUnit)
+
+        # Do nothing, just receive tez
+        pass
+
+
 def get_test_environment():
     # Create the test accounts
     admin = sp.test_account("admin")
@@ -55,6 +81,10 @@ def get_test_environment():
         allowed_fa2s=sp.big_map({objkt.address: True}),
         fee=25)
 
+    # Initialize the recipient contracts
+    fee_recipient = RecipientContract()
+    royalties_recipient = RecipientContract()
+
     # Add all the contracts to the test scenario
     scenario = sp.test_scenario()
     scenario += objkt
@@ -63,9 +93,15 @@ def get_test_environment():
     scenario += curate
     scenario += marketplaceV1
     scenario += marketplaceV3
+    scenario += fee_recipient
+    scenario += royalties_recipient
 
     # Change the OBJKT token administrator to the marketplace v1 contract
     scenario += objkt.set_administrator(marketplaceV1.address).run(sender=admin)
+
+    # Change the marketplace v3 fee recipient
+    scenario += marketplaceV3.update_fee_recipient(fee_recipient.address).run(
+        sender=admin)
 
     # Save all the variables in a test environment dictionary
     testEnvironment = {
@@ -80,7 +116,9 @@ def get_test_environment():
         "newobjkt" : newobjkt,
         "curate" : curate,
         "marketplaceV1" : marketplaceV1,
-        "marketplaceV3" : marketplaceV3}
+        "marketplaceV3" : marketplaceV3,
+        "fee_recipient": fee_recipient,
+        "royalties_recipient": royalties_recipient}
 
     return testEnvironment
 
@@ -96,6 +134,8 @@ def test_swap_and_collect():
     objkt = testEnvironment["objkt"]
     marketplaceV1 = testEnvironment["marketplaceV1"]
     marketplaceV3 = testEnvironment["marketplaceV3"]
+    fee_recipient = testEnvironment["fee_recipient"]
+    royalties_recipient = testEnvironment["royalties_recipient"]
 
     # Mint an OBJKT
     editions = 100
@@ -128,16 +168,7 @@ def test_swap_and_collect():
         objkt_amount=swapped_editions,
         xtz_per_objkt=sp.mutez(edition_price),
         royalties=royalties,
-        creator=artist1.address).run(valid=False, sender=artist1, amount=sp.tez(3))
-
-    # Check that the royalties cannot be set to a value higher than 25%
-    scenario += marketplaceV3.swap(
-        fa2=objkt.address,
-        objkt_id=objkt_id,
-        objkt_amount=swapped_editions,
-        xtz_per_objkt=sp.mutez(edition_price),
-        royalties=251,
-        creator=artist1.address).run(valid=False, sender=artist1)
+        creator=royalties_recipient.address).run(valid=False, sender=artist1, amount=sp.tez(3))
 
     # Swap the OBJKT in the marketplace v3 contract
     scenario += marketplaceV3.swap(
@@ -146,7 +177,7 @@ def test_swap_and_collect():
         objkt_amount=swapped_editions,
         xtz_per_objkt=sp.mutez(edition_price),
         royalties=royalties,
-        creator=artist1.address).run(sender=artist1)
+        creator=royalties_recipient.address).run(sender=artist1)
 
     # Check that the OBJKT ledger information is correct
     scenario.verify(objkt.data.ledger[(artist1.address, objkt_id)].balance == editions - swapped_editions)
@@ -160,7 +191,7 @@ def test_swap_and_collect():
     scenario.verify(marketplaceV3.data.swaps[0].objkt_amount == swapped_editions)
     scenario.verify(marketplaceV3.data.swaps[0].xtz_per_objkt == sp.mutez(edition_price))
     scenario.verify(marketplaceV3.data.swaps[0].royalties == royalties)
-    scenario.verify(marketplaceV3.data.swaps[0].creator == artist1.address)
+    scenario.verify(marketplaceV3.data.swaps[0].creator == royalties_recipient.address)
     scenario.verify(marketplaceV3.data.counter == 1)
 
     # Check that the on-chain views work
@@ -171,7 +202,7 @@ def test_swap_and_collect():
     scenario.verify(marketplaceV3.get_swap(0).objkt_amount == swapped_editions)
     scenario.verify(marketplaceV3.get_swap(0).xtz_per_objkt == sp.mutez(edition_price))
     scenario.verify(marketplaceV3.get_swap(0).royalties == royalties)
-    scenario.verify(marketplaceV3.get_swap(0).creator == artist1.address)
+    scenario.verify(marketplaceV3.get_swap(0).creator == royalties_recipient.address)
     scenario.verify(marketplaceV3.get_swaps_counter() == 1)
 
     # Check that collecting fails if the collector is the swap issuer
@@ -187,6 +218,8 @@ def test_swap_and_collect():
 
     # Check that all the tez have been sent and the swaps big map has been updated
     scenario.verify(marketplaceV3.balance == sp.mutez(0))
+    scenario.verify(fee_recipient.balance == sp.utils.nat_to_mutez(int(edition_price * (25 / 1000) * 2)))
+    scenario.verify(royalties_recipient.balance == sp.utils.nat_to_mutez(int(edition_price * (royalties / 1000) * 2)))
     scenario.verify(marketplaceV3.data.swaps[0].objkt_amount == swapped_editions - 2)
     scenario.verify(marketplaceV3.get_swap(0).objkt_amount == swapped_editions - 2)
 
@@ -226,6 +259,8 @@ def test_free_collect():
     objkt = testEnvironment["objkt"]
     marketplaceV1 = testEnvironment["marketplaceV1"]
     marketplaceV3 = testEnvironment["marketplaceV3"]
+    fee_recipient = testEnvironment["fee_recipient"]
+    royalties_recipient = testEnvironment["royalties_recipient"]
 
     # Mint an OBJKT
     editions = 100
@@ -252,13 +287,15 @@ def test_free_collect():
         objkt_amount=swapped_editions,
         xtz_per_objkt=sp.mutez(edition_price),
         royalties=royalties,
-        creator=artist1.address).run(sender=artist1)
+        creator=royalties_recipient.address).run(sender=artist1)
 
     # Collect the OBJKT
     scenario += marketplaceV3.collect(0).run(sender=collector1, amount=sp.mutez(edition_price))
 
     # Check that all the tez have been sent and the swaps big map has been updated
     scenario.verify(marketplaceV3.balance == sp.mutez(0))
+    scenario.verify(fee_recipient.balance == sp.mutez(0))
+    scenario.verify(royalties_recipient.balance == sp.mutez(0))
     scenario.verify(marketplaceV3.data.swaps[0].objkt_amount == swapped_editions - 1)
 
     # Check that the OBJKT ledger information is correct
@@ -277,6 +314,8 @@ def test_very_cheap_collect():
     objkt = testEnvironment["objkt"]
     marketplaceV1 = testEnvironment["marketplaceV1"]
     marketplaceV3 = testEnvironment["marketplaceV3"]
+    fee_recipient = testEnvironment["fee_recipient"]
+    royalties_recipient = testEnvironment["royalties_recipient"]
 
     # Mint an OBJKT
     editions = 100
@@ -303,13 +342,15 @@ def test_very_cheap_collect():
         objkt_amount=swapped_editions,
         xtz_per_objkt=sp.mutez(edition_price),
         royalties=royalties,
-        creator=artist1.address).run(sender=artist1)
+        creator=royalties_recipient.address).run(sender=artist1)
 
     # Collect the OBJKT
     scenario += marketplaceV3.collect(0).run(sender=collector1, amount=sp.mutez(edition_price))
 
     # Check that all the tez have been sent and the swaps big map has been updated
     scenario.verify(marketplaceV3.balance == sp.mutez(0))
+    scenario.verify(fee_recipient.balance == sp.utils.nat_to_mutez(int(edition_price * (25 / 1000) * 2)))
+    scenario.verify(royalties_recipient.balance == sp.utils.nat_to_mutez(int(edition_price * (royalties / 1000) * 2)))
     scenario.verify(marketplaceV3.data.swaps[0].objkt_amount == swapped_editions - 1)
 
     # Check that the OBJKT ledger information is correct
@@ -355,10 +396,11 @@ def test_update_fee_recipient():
     artist1 = testEnvironment["artist1"]
     artist2 = testEnvironment["artist2"]
     marketplaceV3 = testEnvironment["marketplaceV3"]
+    fee_recipient = testEnvironment["fee_recipient"]
 
     # Check the original fee recipient
-    scenario.verify(marketplaceV3.data.fee_recipient == admin.address)
-    scenario.verify(marketplaceV3.get_fee_recipient() == admin.address)
+    scenario.verify(marketplaceV3.data.fee_recipient == fee_recipient.address)
+    scenario.verify(marketplaceV3.get_fee_recipient() == fee_recipient.address)
 
     # Check that only the admin can update the fee recipient
     new_fee_recipient = artist1.address
@@ -759,6 +801,15 @@ def test_swap_failure_conditions():
         xtz_per_objkt=sp.mutez(edition_price),
         royalties=royalties,
         creator=artist1.address).run(valid=False, sender=admin)
+
+    # Trying to swap with royalties higher than 25% must fail
+    scenario += marketplaceV3.swap(
+        fa2=objkt.address,
+        objkt_id=objkt_id,
+        objkt_amount=editions,
+        xtz_per_objkt=sp.mutez(edition_price),
+        royalties=251,
+        creator=artist1.address).run(valid=False, sender=artist1)
 
     # Cannot swap 0 items
     scenario += marketplaceV3.swap(
