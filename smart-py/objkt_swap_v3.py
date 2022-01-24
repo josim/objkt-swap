@@ -215,45 +215,47 @@ class Marketplace(sp.Contract):
                   message="HENC_WRONG_SWAP_ID")
 
         # Check that the collector is not the creator of the swap
-        swap = self.data.swaps[swap_id]
-        sp.verify(sp.sender != swap.issuer, message="HENC_IS_SWAP_ISSUER")
+        swap = sp.local("swap", self.data.swaps[swap_id])
+        sp.verify(sp.sender != swap.value.issuer, message="HENC_IS_SWAP_ISSUER")
 
         # Check that the provided tez amount is exactly the edition price
-        sp.verify(sp.amount == swap.xtz_per_objkt,
+        sp.verify(sp.amount == swap.value.xtz_per_objkt,
                   message="HENC_WRONG_TEZ_AMOUNT")
 
         # Check that there is at least one edition available to collect
-        sp.verify(swap.objkt_amount > 0, message="HENC_SWAP_COLLECTED")
+        sp.verify(swap.value.objkt_amount > 0, message="HENC_SWAP_COLLECTED")
 
         # Handle tez tranfers if the edition price is not zero
-        sp.if swap.xtz_per_objkt != sp.tez(0):
+        sp.if swap.value.xtz_per_objkt != sp.tez(0):
             # Send the royalties to the NFT creator
             royalties_amount = sp.local(
-                "royalties_amount", sp.split_tokens(swap.xtz_per_objkt, swap.royalties, 1000))
+                "royalties_amount", sp.split_tokens(
+                    swap.value.xtz_per_objkt, swap.value.royalties, 1000))
 
             sp.if royalties_amount.value > sp.mutez(0):
-                sp.send(swap.creator, royalties_amount.value)
+                sp.send(swap.value.creator, royalties_amount.value)
 
             # Send the management fees
             fee_amount = sp.local(
-                "fee_amount", sp.split_tokens(swap.xtz_per_objkt, self.data.fee, 1000))
+                "fee_amount", sp.split_tokens(
+                    swap.value.xtz_per_objkt, self.data.fee, 1000))
 
             sp.if fee_amount.value > sp.mutez(0):
                 sp.send(self.data.fee_recipient, fee_amount.value)
 
             # Send what is left to the swap issuer
-            sp.send(swap.issuer, sp.amount - royalties_amount.value - fee_amount.value)
+            sp.send(swap.value.issuer, sp.amount - royalties_amount.value - fee_amount.value)
 
         # Transfer the token edition to the collector
         self.fa2_transfer(
-            fa2=swap.fa2,
+            fa2=swap.value.fa2,
             from_=sp.self_address,
             to_=sp.sender,
-            token_id=swap.objkt_id,
+            token_id=swap.value.objkt_id,
             token_amount=1)
 
         # Update the number of editions available in the swaps big map
-        swap.objkt_amount = sp.as_nat(swap.objkt_amount - 1)
+        self.data.swaps[swap_id].objkt_amount = sp.as_nat(swap.value.objkt_amount - 1)
 
     @sp.entry_point
     def cancel_swap(self, swap_id):
@@ -277,19 +279,19 @@ class Marketplace(sp.Contract):
                   message="HENC_WRONG_SWAP_ID")
 
         # Check that the swap issuer is cancelling the swap
-        swap = self.data.swaps[swap_id]
-        sp.verify(sp.sender == swap.issuer, message="HENC_NOT_SWAP_ISSUER")
+        swap = sp.local("swap", self.data.swaps[swap_id])
+        sp.verify(sp.sender == swap.value.issuer, message="HENC_NOT_SWAP_ISSUER")
 
         # Check that there is at least one swapped edition
-        sp.verify(swap.objkt_amount > 0, message="HENC_SWAP_COLLECTED")
+        sp.verify(swap.value.objkt_amount > 0, message="HENC_SWAP_COLLECTED")
 
         # Transfer the remaining token editions back to the owner
         self.fa2_transfer(
-            fa2=swap.fa2,
+            fa2=swap.value.fa2,
             from_=sp.self_address,
             to_=sp.sender,
-            token_id=swap.objkt_id,
-            token_amount=swap.objkt_amount)
+            token_id=swap.value.objkt_id,
+            token_amount=swap.value.objkt_amount)
 
         # Delete the swap entry in the the swaps big map
         del self.data.swaps[swap_id]
