@@ -6,21 +6,21 @@ and adds the possibility to trade different kinds of FA2 tokens.
 
 Error message codes:
 
-- HENC_NOT_MANAGER: The operation can only be executed by the contract manager.
-- HENC_TEZ_TRANSFER: The operation does not accept tez transfers.
-- HENC_SWAPS_PAUSED: Swaps are currently paused in the marketplace.
-- HENC_COLLECTS_PAUSED: Collects are currently paused in the marketplace.
-- HENC_FA2_NOT_ALLOWED: This FA2 token cannot be traded in the marketplace.
-- HENC_NO_SWAPPED_EDITIONS: At least one edition needs to be swapped.
-- HENC_WRONG_ROYALTIES: The royalties cannot be higher than 25%.
-- HENC_WRONG_SWAP_ID: The swap_id doesn't exist.
-- HENC_IS_SWAP_ISSUER: The collector cannot be the swap issuer.
-- HENC_WRONG_TEZ_AMOUNT: The sent tez amount does not coincide with the edition price.
-- HENC_SWAP_COLLECTED: All the swapped editions have already been collected.
-- HENC_NOT_SWAP_ISSUER: Only the swap issuer can cancel the swap.
-- HENC_WRONG_FEES: The marketplace fees cannot be higher than 25%.
-- HENC_NO_NEW_MANAGER: The new manager has not been proposed.
-- HENC_NOT_PROPOSED_MANAGER: The operation can only be executed by the proposed manager.
+- MP_NOT_MANAGER: The operation can only be executed by the contract manager.
+- MP_TEZ_TRANSFER: The operation does not accept tez transfers.
+- MP_SWAPS_PAUSED: Swaps are currently paused in the marketplace.
+- MP_COLLECTS_PAUSED: Collects are currently paused in the marketplace.
+- MP_FA2_NOT_ALLOWED: This FA2 token cannot be traded in the marketplace.
+- MP_NO_SWAPPED_EDITIONS: At least one edition needs to be swapped.
+- MP_WRONG_ROYALTIES: The royalties cannot be higher than 25%.
+- MP_WRONG_SWAP_ID: The swap_id doesn't exist.
+- MP_IS_SWAP_ISSUER: The collector cannot be the swap issuer.
+- MP_WRONG_TEZ_AMOUNT: The provided tez amount must match the edition price.
+- MP_SWAP_COLLECTED: All the swapped editions have already been collected.
+- MP_NOT_SWAP_ISSUER: Only the swap issuer can cancel the swap.
+- MP_WRONG_FEES: The marketplace fees cannot be higher than 25%.
+- MP_NO_NEW_MANAGER: The new manager has not been proposed.
+- MP_NOT_PROPOSED_MANAGER: The operation can only be executed by the proposed manager.
 
 """
 
@@ -116,13 +116,13 @@ class Marketplace(sp.Contract):
         manager.
 
         """
-        sp.verify(sp.sender == self.data.manager, message="HENC_NOT_MANAGER")
+        sp.verify(sp.sender == self.data.manager, message="MP_NOT_MANAGER")
 
     def check_no_tez_transfer(self):
         """Checks that no tez were transferred in the operation.
 
         """
-        sp.verify(sp.amount == sp.tez(0), message="HENC_TEZ_TRANSFER")
+        sp.verify(sp.amount == sp.tez(0), message="MP_TEZ_TRANSFER")
 
     @sp.entry_point
     def swap(self, params):
@@ -157,20 +157,20 @@ class Marketplace(sp.Contract):
                 ("fa2", ("objkt_id", ("objkt_amount", ("xtz_per_objkt", ("royalties", "creator")))))))
 
         # Check that swaps are not paused
-        sp.verify(~self.data.swaps_paused, message="HENC_SWAPS_PAUSED")
+        sp.verify(~self.data.swaps_paused, message="MP_SWAPS_PAUSED")
 
         # Check that no tez have been transferred
         self.check_no_tez_transfer()
 
         # Check that the token is one of the allowed tokens to trade
         sp.verify(self.data.allowed_fa2s.get(params.fa2, default_value=False),
-                  message="HENC_FA2_NOT_ALLOWED")
+                  message="MP_FA2_NOT_ALLOWED")
 
         # Check that at least one edition will be swapped
-        sp.verify(params.objkt_amount > 0, message="HENC_NO_SWAPPED_EDITIONS")
+        sp.verify(params.objkt_amount > 0, message="MP_NO_SWAPPED_EDITIONS")
 
         # Check that the royalties are within the expected limits
-        sp.verify(params.royalties <= 250, message="HENC_WRONG_ROYALTIES")
+        sp.verify(params.royalties <= 250, message="MP_WRONG_ROYALTIES")
 
         # Transfer all the editions to the marketplace account
         self.fa2_transfer(
@@ -208,22 +208,21 @@ class Marketplace(sp.Contract):
         sp.set_type(swap_id, sp.TNat)
 
         # Check that collects are not paused
-        sp.verify(~self.data.collects_paused, message="HENC_COLLECTS_PAUSED")
+        sp.verify(~self.data.collects_paused, message="MP_COLLECTS_PAUSED")
 
         # Check that the swap id is present in the swaps big map
-        sp.verify(self.data.swaps.contains(swap_id),
-                  message="HENC_WRONG_SWAP_ID")
+        sp.verify(self.data.swaps.contains(swap_id), message="MP_WRONG_SWAP_ID")
 
         # Check that the collector is not the creator of the swap
         swap = sp.local("swap", self.data.swaps[swap_id])
-        sp.verify(sp.sender != swap.value.issuer, message="HENC_IS_SWAP_ISSUER")
+        sp.verify(sp.sender != swap.value.issuer, message="MP_IS_SWAP_ISSUER")
 
         # Check that the provided tez amount is exactly the edition price
         sp.verify(sp.amount == swap.value.xtz_per_objkt,
-                  message="HENC_WRONG_TEZ_AMOUNT")
+                  message="MP_WRONG_TEZ_AMOUNT")
 
         # Check that there is at least one edition available to collect
-        sp.verify(swap.value.objkt_amount > 0, message="HENC_SWAP_COLLECTED")
+        sp.verify(swap.value.objkt_amount > 0, message="MP_SWAP_COLLECTED")
 
         # Handle tez tranfers if the edition price is not zero
         sp.if swap.value.xtz_per_objkt != sp.tez(0):
@@ -275,15 +274,14 @@ class Marketplace(sp.Contract):
         self.check_no_tez_transfer()
 
         # Check that the swap id is present in the swaps big map
-        sp.verify(self.data.swaps.contains(swap_id),
-                  message="HENC_WRONG_SWAP_ID")
+        sp.verify(self.data.swaps.contains(swap_id), message="MP_WRONG_SWAP_ID")
 
         # Check that the swap issuer is cancelling the swap
         swap = sp.local("swap", self.data.swaps[swap_id])
-        sp.verify(sp.sender == swap.value.issuer, message="HENC_NOT_SWAP_ISSUER")
+        sp.verify(sp.sender == swap.value.issuer, message="MP_NOT_SWAP_ISSUER")
 
         # Check that there is at least one swapped edition
-        sp.verify(swap.value.objkt_amount > 0, message="HENC_SWAP_COLLECTED")
+        sp.verify(swap.value.objkt_amount > 0, message="MP_SWAP_COLLECTED")
 
         # Transfer the remaining token editions back to the owner
         self.fa2_transfer(
@@ -316,7 +314,7 @@ class Marketplace(sp.Contract):
         self.check_no_tez_transfer()
 
         # Check that the new fee is not larger than 25%
-        sp.verify(new_fee <= 250, message="HENC_WRONG_FEES")
+        sp.verify(new_fee <= 250, message="MP_WRONG_FEES")
 
         # Set the new management fee
         self.data.fee = new_fee
@@ -375,11 +373,11 @@ class Marketplace(sp.Contract):
         """
         # Check that there is a proposed manager
         sp.verify(self.data.proposed_manager.is_some(),
-                  message="HENC_NO_NEW_MANAGER")
+                  message="MP_NO_NEW_MANAGER")
 
         # Check that the proposed manager executed the entry point
         sp.verify(sp.sender == self.data.proposed_manager.open_some(),
-                  message="HENC_NOT_PROPOSED_MANAGER")
+                  message="MP_NOT_PROPOSED_MANAGER")
 
         # Check that no tez have been transferred
         self.check_no_tez_transfer()
@@ -423,7 +421,7 @@ class Marketplace(sp.Contract):
         Parameters
         ----------
         fa2: sp.TAddress
-            The FA2 token contract address to trade.
+            The FA2 token contract address to add.
 
         """
         # Define the input parameter data type
@@ -587,8 +585,7 @@ class Marketplace(sp.Contract):
         sp.set_type(swap_id, sp.TNat)
 
         # Check that the swap id is present in the swaps big map
-        sp.verify(self.data.swaps.contains(swap_id),
-                  message="HENC_WRONG_SWAP_ID")
+        sp.verify(self.data.swaps.contains(swap_id), message="MP_WRONG_SWAP_ID")
 
         # Return the swap information
         sp.result(self.data.swaps[swap_id])
