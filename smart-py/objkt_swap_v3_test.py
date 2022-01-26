@@ -592,8 +592,8 @@ def test_add_and_remove_fa2():
     scenario.verify(newobjkt.data.ledger[(collector1.address, objkt_id)].balance == 1)
 
 
-@sp.add_test(name="Test pause swaps")
-def test_pause_swaps():
+@sp.add_test(name="Test set pause swaps")
+def test_set_pause_swaps():
     # Get the test environment
     testEnvironment = get_test_environment()
     scenario = testEnvironment["scenario"]
@@ -635,9 +635,9 @@ def test_pause_swaps():
     scenario += marketplaceV3.collect(0).run(sender=collector1, amount=sp.mutez(edition_price))
 
     # Pause the swaps and make sure only the admin can do it
-    scenario += marketplaceV3.pause_swaps(True).run(valid=False, sender=collector1)
-    scenario += marketplaceV3.pause_swaps(True).run(valid=False, sender=admin, amount=sp.tez(3))
-    scenario += marketplaceV3.pause_swaps(True).run(sender=admin)
+    scenario += marketplaceV3.set_pause_swaps(True).run(valid=False, sender=collector1)
+    scenario += marketplaceV3.set_pause_swaps(True).run(valid=False, sender=admin, amount=sp.tez(3))
+    scenario += marketplaceV3.set_pause_swaps(True).run(sender=admin)
 
     # Check that only the swaps are paused
     scenario.verify(marketplaceV3.data.swaps_paused)
@@ -659,7 +659,7 @@ def test_pause_swaps():
     scenario += marketplaceV3.cancel_swap(0).run(sender=artist1)
 
     # Unpause the swaps again
-    scenario += marketplaceV3.pause_swaps(False).run(sender=admin)
+    scenario += marketplaceV3.set_pause_swaps(False).run(sender=admin)
 
     # Check that swapping and collecting is possible again
     scenario += marketplaceV3.swap(
@@ -673,8 +673,8 @@ def test_pause_swaps():
     scenario += marketplaceV3.cancel_swap(1).run(sender=artist1)
 
 
-@sp.add_test(name="Test pause collects")
-def test_pause_collects():
+@sp.add_test(name="Test set pause collects")
+def test_set_pause_collects():
     # Get the test environment
     testEnvironment = get_test_environment()
     scenario = testEnvironment["scenario"]
@@ -716,9 +716,9 @@ def test_pause_collects():
     scenario += marketplaceV3.collect(0).run(sender=collector1, amount=sp.mutez(edition_price))
 
     # Pause the collects and make sure only the admin can do it
-    scenario += marketplaceV3.pause_collects(True).run(valid=False, sender=collector1)
-    scenario += marketplaceV3.pause_collects(True).run(valid=False, sender=admin, amount=sp.tez(3))
-    scenario += marketplaceV3.pause_collects(True).run(sender=admin)
+    scenario += marketplaceV3.set_pause_collects(True).run(valid=False, sender=collector1)
+    scenario += marketplaceV3.set_pause_collects(True).run(valid=False, sender=admin, amount=sp.tez(3))
+    scenario += marketplaceV3.set_pause_collects(True).run(sender=admin)
 
     # Check that only the collects are paused
     scenario.verify(~marketplaceV3.data.swaps_paused)
@@ -740,7 +740,7 @@ def test_pause_collects():
     scenario += marketplaceV3.cancel_swap(0).run(sender=artist1)
 
     # Unpause the collects again
-    scenario += marketplaceV3.pause_collects(False).run(sender=admin)
+    scenario += marketplaceV3.set_pause_collects(False).run(sender=admin)
 
     # Check that swapping and collecting is possible again
     scenario += marketplaceV3.swap(

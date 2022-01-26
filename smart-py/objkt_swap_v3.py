@@ -459,7 +459,7 @@ class Marketplace(sp.Contract):
         del self.data.allowed_fa2s[fa2]
 
     @sp.entry_point
-    def pause_swaps(self, pause):
+    def set_pause_swaps(self, pause):
         """Pause or not the swaps.
 
         Parameters
@@ -482,7 +482,7 @@ class Marketplace(sp.Contract):
         self.data.swaps_paused = pause
 
     @sp.entry_point
-    def pause_collects(self, pause):
+    def set_pause_collects(self, pause):
         """Pause or not the collects.
 
         Parameters
