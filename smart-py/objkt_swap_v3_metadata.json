@@ -1,7 +1,7 @@
 {
     "name": "HEN Community Marketplace",
-    "description": "This marketplace allows swapping and collecting OBJKTs and other HEN Community related FA2 tokens",
-    "version": "3.0.0",
+    "description": "This marketplace contract allows swapping and collecting OBJKTs and other HEN Community related FA2 tokens",
+    "version": "1.0.0",
     "license": {
         "name": "MIT",
         "details": "The MIT License"
