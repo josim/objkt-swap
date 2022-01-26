@@ -78,7 +78,7 @@ def get_test_environment():
     marketplaceV3 = marketplaceContractV3.Marketplace(
         manager=admin.address,
         metadata=sp.utils.metadata_of_url("ipfs://eee"),
-        allowed_fa2s=sp.big_map({objkt.address: True}),
+        allowed_fa2s=sp.big_map({objkt.address: sp.unit}),
         fee=25)
 
     # Initialize the recipient contracts
@@ -536,8 +536,8 @@ def test_add_and_remove_fa2():
     scenario += marketplaceV3.add_fa2(new_fa2).run(sender=admin)
 
     # Check that the new FA2 token is now part of the allowed FA2 contracts
-    scenario.verify(marketplaceV3.data.allowed_fa2s[objkt.address])
-    scenario.verify(marketplaceV3.data.allowed_fa2s[new_fa2])
+    scenario.verify(marketplaceV3.data.allowed_fa2s.contains(objkt.address))
+    scenario.verify(marketplaceV3.data.allowed_fa2s.contains(new_fa2))
     scenario.verify(marketplaceV3.is_allowed_fa2(objkt.address))
     scenario.verify(marketplaceV3.is_allowed_fa2(new_fa2))
 
@@ -570,8 +570,8 @@ def test_add_and_remove_fa2():
     scenario += marketplaceV3.remove_fa2(newobjkt.address).run(sender=admin)
 
     # Check that now is not allowed to trade newOBJKT tokens
-    scenario.verify(marketplaceV3.data.allowed_fa2s[objkt.address])
-    scenario.verify(~marketplaceV3.data.allowed_fa2s[newobjkt.address])
+    scenario.verify(marketplaceV3.data.allowed_fa2s.contains(objkt.address))
+    scenario.verify(~marketplaceV3.data.allowed_fa2s.contains(newobjkt.address))
     scenario.verify(marketplaceV3.is_allowed_fa2(objkt.address))
     scenario.verify(~marketplaceV3.is_allowed_fa2(newobjkt.address))
     scenario += marketplaceV3.swap(
