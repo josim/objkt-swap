@@ -1,3 +1,6 @@
+import smartpy as sp
+
+
 class Marketplace(sp.Contract):
     def __init__(self, objkt, metadata, manager, fee):
         self.init(
