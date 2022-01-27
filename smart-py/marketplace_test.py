@@ -1,4 +1,4 @@
-"""Unit tests for the Marketplace v3 class.
+"""Unit tests for the Marketplace class.
 
 """
 
@@ -8,7 +8,7 @@ import smartpy as sp
 # Import the FA2 and marketplaces modules
 fa2Contract = sp.io.import_script_from_url(f"file://{os.getcwd()}/fa2.py")
 marketplaceContractV1 = sp.io.import_script_from_url(f"file://{os.getcwd()}/objkt_swap_v1.py")
-marketplaceContractV3 = sp.io.import_script_from_url(f"file://{os.getcwd()}/objkt_swap_v3.py")
+marketplaceContractV3 = sp.io.import_script_from_url(f"file://{os.getcwd()}/marketplace.py")
 
 
 class RecipientContract(sp.Contract):
