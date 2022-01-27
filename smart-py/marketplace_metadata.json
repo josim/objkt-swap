@@ -10,7 +10,7 @@
     "homepage": "https://github.com/hen-community",
     "source": {
         "tools": ["SmartPy 0.8.10"],
-        "location": "https://github.com/hen-community/objkt-swap/blob/master/smart-py/objkt_swap_v3.py"
+        "location": "https://github.com/hen-community/objkt-swap/blob/master/smart-py/marketplace.py"
     },
     "interfaces": ["TZIP-016"],
     "errors": [
