@@ -669,6 +669,6 @@ class Marketplace(sp.Contract):
 # Add a compilation target initialized to the HENC community multisig and the OBJKT FA2 contract
 sp.add_compilation_target("marketplace", Marketplace(
     manager=sp.address("KT1QmSmQ8Mj8JHNKKQmepFqQZy7kDWQ1ek69"),
-    metadata=sp.utils.metadata_of_url("ipfs://QmQf2LLAt2FYMZwiBZXxp1zTTCbaqkEYDmMdCGFCC1ZhRp"),
+    metadata=sp.utils.metadata_of_url("ipfs://QmRZYZHFrybcsViqpdBs1hjcmusvRsmaW1Rumd8gcvAjbD"),
     allowed_fa2s=sp.big_map({sp.address("KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton"): sp.unit}),
     fee=sp.nat(25)))
