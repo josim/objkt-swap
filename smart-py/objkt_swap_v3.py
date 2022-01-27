@@ -61,7 +61,7 @@ class Marketplace(sp.Contract):
         metadata: sp.TBigMap(sp.TString, sp.TBytes)
             The contract metadata big map. It should contain the IPFS path to
             the contract metadata json file.
-        allowed_fa2s: sp.TBigMap(sp.TAddress, sp.TBool)
+        allowed_fa2s: sp.TBigMap(sp.TAddress, sp.TUnit)
             A big map with the list FA2 token addresses that can be traded (or
             not) in the marketplace.
         fee: sp.TNat
@@ -76,9 +76,9 @@ class Marketplace(sp.Contract):
             # The metadata is stored as a json file in IPFS and the big map
             # contains the IPFS path.
             metadata=sp.TBigMap(sp.TString, sp.TBytes),
-            # The big map with the FA2 token addresses that can be traded (or
-            # not) in the marketplace.
-            allowed_fa2s=sp.TBigMap(sp.TAddress, sp.TBool),
+            # The big map with the FA2 token addresses that can be traded in the
+            # marketplace.
+            allowed_fa2s=sp.TBigMap(sp.TAddress, sp.TUnit),
             # The big map with the swaps information.
             swaps=sp.TBigMap(sp.TNat, Marketplace.SWAP_TYPE),
             # The marketplace fee taken for each collect operation in per mille
@@ -163,7 +163,7 @@ class Marketplace(sp.Contract):
         self.check_no_tez_transfer()
 
         # Check that the token is one of the allowed tokens to trade
-        sp.verify(self.data.allowed_fa2s.get(params.fa2, default_value=False),
+        sp.verify(self.data.allowed_fa2s.contains(params.fa2),
                   message="MP_FA2_NOT_ALLOWED")
 
         # Check that at least one edition will be swapped
@@ -434,7 +434,7 @@ class Marketplace(sp.Contract):
         self.check_no_tez_transfer()
 
         # Add the new FA2 token address
-        self.data.allowed_fa2s[fa2] = True
+        self.data.allowed_fa2s[fa2] = sp.unit
 
     @sp.entry_point
     def remove_fa2(self, fa2):
@@ -455,11 +455,11 @@ class Marketplace(sp.Contract):
         # Check that no tez have been transferred
         self.check_no_tez_transfer()
 
-        # Disable the FA2 token address
-        self.data.allowed_fa2s[fa2] = False
+        # Remove the FA2 token address from the list of allowed FA2 tokens
+        del self.data.allowed_fa2s[fa2]
 
     @sp.entry_point
-    def pause_swaps(self, pause):
+    def set_pause_swaps(self, pause):
         """Pause or not the swaps.
 
         Parameters
@@ -482,7 +482,7 @@ class Marketplace(sp.Contract):
         self.data.swaps_paused = pause
 
     @sp.entry_point
-    def pause_collects(self, pause):
+    def set_pause_collects(self, pause):
         """Pause or not the collects.
 
         Parameters
@@ -536,7 +536,7 @@ class Marketplace(sp.Contract):
         sp.set_type(fa2, sp.TAddress)
 
         # Return if it can be traded or not
-        sp.result(self.data.allowed_fa2s.get(fa2, default_value=False))
+        sp.result(self.data.allowed_fa2s.contains(fa2))
 
     @sp.onchain_view()
     def has_swap(self, swap_id):
@@ -670,5 +670,5 @@ class Marketplace(sp.Contract):
 sp.add_compilation_target("marketplace", Marketplace(
     manager=sp.address("KT1QmSmQ8Mj8JHNKKQmepFqQZy7kDWQ1ek69"),
     metadata=sp.utils.metadata_of_url("ipfs://QmQf2LLAt2FYMZwiBZXxp1zTTCbaqkEYDmMdCGFCC1ZhRp"),
-    allowed_fa2s=sp.big_map({sp.address("KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton"): True}),
+    allowed_fa2s=sp.big_map({sp.address("KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton"): sp.unit}),
     fee=sp.nat(25)))
