@@ -1,4 +1,4 @@
-"""The HEN Community marketplace contract.
+"""The Teia Community marketplace contract.
 
 This version corrects several small bugs from the v2 H=N marketplace contract
 and adds the possibility to trade different kinds of FA2 tokens.
@@ -28,7 +28,7 @@ import smartpy as sp
 
 
 class Marketplace(sp.Contract):
-    """This contract implements the first version of the HEN Community
+    """This contract implements the first version of the Teia Community
     marketplace contract.
 
     """
@@ -666,7 +666,7 @@ class Marketplace(sp.Contract):
             destination=c)
 
 
-# Add a compilation target initialized to the HENC community multisig and the OBJKT FA2 contract
+# Add a compilation target initialized to the Teia Community multisig and the OBJKT FA2 contract
 sp.add_compilation_target("marketplace", Marketplace(
     manager=sp.address("KT1QmSmQ8Mj8JHNKKQmepFqQZy7kDWQ1ek69"),
     metadata=sp.utils.metadata_of_url("ipfs://QmRZYZHFrybcsViqpdBs1hjcmusvRsmaW1Rumd8gcvAjbD"),
