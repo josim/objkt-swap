@@ -1,7 +1,7 @@
 {
     "name": "Teia Community Marketplace",
     "description": "This marketplace contract allows swapping and collecting OBJKTs and other Teia Community related FA2 tokens",
-    "version": "1.0.0",
+    "version": "3.0.0",
     "license": {
         "name": "MIT",
         "details": "The MIT License"
@@ -10,7 +10,7 @@
     "homepage": "https://teia.art",
     "source": {
         "tools": ["SmartPy 0.8.10"],
-        "location": "https://github.com/teia-community/objkt-swap/blob/1.0.0/smart-py/marketplace.py"
+        "location": "https://github.com/teia-community/objkt-swap/blob/3.0.0/smart-py/marketplace.py"
     },
     "interfaces": ["TZIP-016"],
     "errors": [
