@@ -75,6 +75,10 @@ class Team(sp.Contract):
         # Check that teams are not paused
         sp.verify(~self.data.teams_paused, message="MP_TEAMS_PAUSED")
           
+        # Check if User is in posession of player tokens
+        sp.if self.data.teams[sp.sender] != sp.sender:
+            sp.for token_id in params.token_ids:
+                self.data.teams[sp.sender].player_ids = params.token_id
         # Update the teams bigmap with the new team information
         self.data.teams[sp.sender] = sp.record(
             issuer=sp.sender,
